@@ -11,16 +11,11 @@ interface EditorProps {
 
 const Editor: Component<EditorProps> = (props) => {
   const [content, setContent] = createSignal('');
+  const [tags, setTags] = createSignal<string[]>([]);
   const [isEditing, toggleIsEditing] = createSignal(false);
   const [editorRef, setEditorRef] = createSignal<HTMLTextAreaElement | null>(null);
 
-  const loadDataFromDB = async () => {
-    const data = await DB.getDb(props.date?.toString() || format(Date.now(), 'yyyy-MM-dd'));
-    setContent(data || '');
-  };
-
   const saveContentToDB = async () => {
-    console.log('saving', content());
     await DB.postJournalDb(content());
   };
 
@@ -31,6 +26,20 @@ const Editor: Component<EditorProps> = (props) => {
     toggleIsEditing(!isEditing());
   };
 
+  const updateTagsFromContent = (textContent: string) => {
+    // tags are #example or #example-tag
+    // remove ##.. but include everything else
+    const tagPattern = /#[^\s#]+/g;
+    const foundTags = textContent.match(tagPattern) || [];
+    setTags(foundTags);
+  };
+
+  const handleInput = (e: InputEvent) => {
+    const target = e.target as HTMLTextAreaElement;
+    setContent(target.value);
+    updateTagsFromContent(target.value);
+  };
+
   const handleToggleEdit = (e: KeyboardEvent) => {
     if (e.ctrlKey && e.key === 'e') {
       e.preventDefault();
@@ -38,14 +47,20 @@ const Editor: Component<EditorProps> = (props) => {
     }
   };
 
+  onMount(() => {
+    const loadDataFromDb = async () => {
+      const data = await DB.getDb(props.date?.toString() || format(Date.now(), 'yyyy-MM-dd'));
+      setContent(data || '');
+      updateTagsFromContent(data || '');
+    };
+
+    loadDataFromDb();
+  });
+
   createEffect(() => {
     if (isEditing() && editorRef()) {
       editorRef()?.focus();
     }
-  });
-
-  onMount(() => {
-    loadDataFromDB();
   });
 
   window.addEventListener('keydown', handleToggleEdit);
@@ -53,24 +68,23 @@ const Editor: Component<EditorProps> = (props) => {
 
   return (
     <div class="py-6 px-12">
+      <div class="flex justify-between mb-4">
+        <h2>{format(props?.date || Date.now(), 'MMM dd, yyyy')}</h2>
+        <button class="text-xl min-w-36 rounded-md outline outline-1" onClick={toggleEdit}>
+          {isEditing() ? 'Preview' : 'Edit'}
+        </button>
+      </div>
       <Switch fallback={<div>Loading</div>}>
         <Match when={isEditing()}>
-          <button class="mb-8 text-xl" onClick={toggleEdit}>
-            Editing
-          </button>
           <textarea
-            class="w-full h-72 p-2 text-white text-lg outline outline-1 outline-text-dark bg-background-dark"
-            style={{ margin: '0', 'box-sizing': 'border-box' }}
-            onInput={(e) => setContent(e.currentTarget.value)}
+            class="w-full h-96 mt-4 p-2 text-white text-lg outline outline-1 outline-text-dark bg-background-dark"
+            onInput={handleInput}
             ref={setEditorRef}
             value={content()}
           />
         </Match>
 
         <Match when={!isEditing()}>
-          <button class="mb-8 text-xl" onClick={toggleEdit}>
-            Preview
-          </button>
           <div
             class="w-full h-full p-2 rounded-md"
             innerHTML={marked.parse(content()).toString()}
