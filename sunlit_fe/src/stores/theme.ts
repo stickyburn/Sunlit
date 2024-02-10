@@ -5,7 +5,7 @@ export enum Themes {
   LIGHT = 'light-theme'
 }
 
-const [theme, setTheme] = createSignal(Themes.LIGHT);
+const [theme, setTheme] = createSignal(Themes.DARK);
 
 const toggleTheme = () => {
   setTheme(theme() === Themes.DARK ? Themes.LIGHT : Themes.DARK);
