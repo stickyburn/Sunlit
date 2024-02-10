@@ -16,6 +16,10 @@ export default {
           light: '#F9FAFB',
           dark: '#30293D'
         },
+        editor: {
+          light: '#463f54',
+          dark: '#3f3a47'
+        },
         text: {
           light: '#1F2937',
           dark: '#F9AAFB'
