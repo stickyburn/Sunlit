@@ -1,17 +1,35 @@
 /* eslint-disable solid/no-innerhtml */
-import { Match, Switch, createEffect, createSignal, onCleanup } from 'solid-js';
+import { Component, Match, Switch, createEffect, createSignal, onCleanup, onMount } from 'solid-js';
 import { marked } from 'marked';
+import * as DB from '../../tmp/database';
+import { format } from 'date-fns';
 
-export default function Editor() {
-  const [content, setContent] = createSignal(localStorage.getItem('day-1-content') || '');
-  const [isEditing, toggleIsEditing] = createSignal(true);
+interface EditorProps {
+  date?: Date;
+  title?: string;
+}
+
+const Editor: Component<EditorProps> = (props) => {
+  const [content, setContent] = createSignal('');
+  const [isEditing, toggleIsEditing] = createSignal(false);
   const [editorRef, setEditorRef] = createSignal<HTMLTextAreaElement | null>(null);
 
-  const saveContentToLocalStorage = () => {
-    localStorage.setItem('day-1-content', content());
+  const loadDataFromDB = async () => {
+    const data = await DB.getDb(props.date?.toString() || format(Date.now(), 'yyyy-MM-dd'));
+    setContent(data || '');
   };
 
-  const toggleEdit = () => toggleIsEditing(!isEditing());
+  const saveContentToDB = async () => {
+    console.log('saving', content());
+    await DB.postJournalDb(content());
+  };
+
+  const toggleEdit = () => {
+    if (isEditing()) {
+      saveContentToDB();
+    }
+    toggleIsEditing(!isEditing());
+  };
 
   const handleToggleEdit = (e: KeyboardEvent) => {
     if (e.ctrlKey && e.key === 'e') {
@@ -26,28 +44,33 @@ export default function Editor() {
     }
   });
 
+  onMount(() => {
+    loadDataFromDB();
+  });
+
   window.addEventListener('keydown', handleToggleEdit);
   onCleanup(() => window.removeEventListener('keydown', handleToggleEdit));
 
   return (
-    <div class="p-10">
+    <div class="py-6 px-12">
       <Switch fallback={<div>Loading</div>}>
         <Match when={isEditing()}>
-          <p class="mb-8 text-xl">Editing</p>
+          <button class="mb-8 text-xl" onClick={toggleEdit}>
+            Editing
+          </button>
           <textarea
-            class="w-full h-full p-2 text-black"
+            class="w-full h-72 p-2 text-white text-lg outline outline-1 outline-text-dark bg-background-dark"
             style={{ margin: '0', 'box-sizing': 'border-box' }}
             onInput={(e) => setContent(e.currentTarget.value)}
             ref={setEditorRef}
             value={content()}
           />
-
-          <button class="my-12 outline p-2 rounded-md" onClick={saveContentToLocalStorage}>
-            Savey
-          </button>
         </Match>
 
         <Match when={!isEditing()}>
+          <button class="mb-8 text-xl" onClick={toggleEdit}>
+            Preview
+          </button>
           <div
             class="w-full h-full p-2 rounded-md"
             innerHTML={marked.parse(content()).toString()}
@@ -56,4 +79,6 @@ export default function Editor() {
       </Switch>
     </div>
   );
-}
+};
+
+export default Editor;
