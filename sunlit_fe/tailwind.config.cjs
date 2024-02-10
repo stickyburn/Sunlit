@@ -4,26 +4,9 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: {
-          light: '#6EE7B7',
-          dark: '#047857'
-        },
-        secondary: {
-          light: '#93C5FD',
-          dark: '#1D4ED8'
-        },
-        background: {
-          light: '#F9FAFB',
-          dark: '#30293D'
-        },
-        editor: {
-          light: '#463f54',
-          dark: '#3f3a47'
-        },
-        text: {
-          light: '#1F2937',
-          dark: '#F9AAFB'
-        }
+        primary: 'var(--color-primary)',
+        secondary: 'var(--color-secondary)',
+        background: 'var(--color-background)'
       },
       fontSize: {
         xs: ['0.75rem', { lineHeight: '1rem' }],
